@@ -103,12 +103,11 @@ public class MainActivity extends BaseActivity implements
   ActivityMainBinding binding;
   BiometricPrompt biometricPrompt;
   BiometricPrompt.PromptInfo promptInfo;
-  ConstraintLayout mMainLayout;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    mMainLayout=findViewById(R.id.drawer_layout);
+
     BiometricManager biometricManager = BiometricManager.from(this);
     switch (biometricManager.canAuthenticate()) {
       case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
@@ -126,8 +125,7 @@ public class MainActivity extends BaseActivity implements
 
     Executor executor = ContextCompat.getMainExecutor(this);
 
-    biometricPrompt = new BiometricPrompt(MainActivity.this,
-            executor, new BiometricPrompt.AuthenticationCallback() {
+    biometricPrompt = new BiometricPrompt(MainActivity.this, executor, new BiometricPrompt.AuthenticationCallback() {
       @Override
       public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
         super.onAuthenticationError(errorCode, errString);
