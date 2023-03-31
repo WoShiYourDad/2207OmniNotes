@@ -44,9 +44,14 @@ import android.os.PersistableBundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.Toolbar;
+import androidx.biometric.BiometricManager;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -76,9 +81,11 @@ import it.feio.android.pixlui.links.UrlCompleter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.concurrent.Executor;
+
 import lombok.Getter;
 import lombok.Setter;
-
+import androidx.biometric.BiometricPrompt;
 
 public class MainActivity extends BaseActivity implements
     SharedPreferences.OnSharedPreferenceChangeListener {
@@ -94,10 +101,60 @@ public class MainActivity extends BaseActivity implements
   private FragmentManager mFragmentManager;
 
   ActivityMainBinding binding;
+  BiometricPrompt biometricPrompt;
+  BiometricPrompt.PromptInfo promptInfo;
+  ConstraintLayout mMainLayout;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    mMainLayout=findViewById(R.id.drawer_layout);
+    BiometricManager biometricManager = BiometricManager.from(this);
+    switch (biometricManager.canAuthenticate()) {
+      case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
+        Toast.makeText(getApplicationContext(),"Device does not support fingerprint", Toast.LENGTH_SHORT).show();
+        break;
+
+      case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
+        Toast.makeText(getApplicationContext(),"Fingerprint Hardware have issues", Toast.LENGTH_SHORT).show();
+        break;
+
+      case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
+        Toast.makeText(getApplicationContext(),"No Fingerprint Assigned", Toast.LENGTH_SHORT).show();
+        break;
+    }
+
+    Executor executor = ContextCompat.getMainExecutor(this);
+
+    biometricPrompt = new BiometricPrompt(MainActivity.this,
+            executor, new BiometricPrompt.AuthenticationCallback() {
+      @Override
+      public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+        super.onAuthenticationError(errorCode, errString);
+        Toast.makeText(getApplicationContext(),"Authentication error: " + errString, Toast.LENGTH_SHORT).show();
+      }
+
+      @Override
+      public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+        super.onAuthenticationSucceeded(result);
+        Toast.makeText(getApplicationContext(),"Authentication succeeded!", Toast.LENGTH_SHORT).show();
+      }
+
+      @Override
+      public void onAuthenticationFailed() {
+        super.onAuthenticationFailed();
+        Toast.makeText(getApplicationContext(), "Authentication failed",Toast.LENGTH_SHORT).show();
+      }
+    });
+
+    promptInfo = new BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Biometric login for OmniNotes")
+            .setSubtitle("Log in using your biometric credential")
+            .setNegativeButtonText("Use account password")
+            .build();
+
+    biometricPrompt.authenticate(promptInfo);
+
     setTheme(R.style.OmniNotesTheme_ApiSpec);
 
     binding = ActivityMainBinding.inflate(getLayoutInflater());
