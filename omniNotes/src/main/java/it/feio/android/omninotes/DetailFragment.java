@@ -1278,6 +1278,8 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
   }
 
   private void takePhoto() {
+    PermissionsHelper.requestPermission(getActivity(), Manifest.permission.CAMERA, R.string
+            .camera, binding.snackbarPlaceholder, () -> {
     // Checks for camera app available
     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
     if (!IntentChecker
@@ -1295,7 +1297,7 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
     attachmentUri = FileProviderHelper.getFileProvider(f);
     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
     intent.putExtra(MediaStore.EXTRA_OUTPUT, attachmentUri);
-    startActivityForResult(intent, TAKE_PHOTO);
+    startActivityForResult(intent, TAKE_PHOTO);});
   }
 
   private void takeVideo() {
