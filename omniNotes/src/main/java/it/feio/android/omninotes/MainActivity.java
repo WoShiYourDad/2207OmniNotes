@@ -133,7 +133,10 @@ public class MainActivity extends BaseActivity implements
         super.onAuthenticationError(errorCode, errString);
         Toast.makeText(getApplicationContext(),"Authentication error: " + errString, Toast.LENGTH_SHORT).show();
         //Toast.makeText(getApplicationContext(),"Error code: " + errorCode, Toast.LENGTH_SHORT).show();
-        if ((errorCode == 5) || (errorCode == 10)) {
+        if ((errorCode == 5) || (errorCode == 10) || (errorCode == 13)) {
+          if (errorCode == 13) {
+            Toast.makeText(getApplicationContext(),"Sorry you MUST use biometrics to login", Toast.LENGTH_SHORT).show();
+          }
           finishAndRemoveTask();
         }
       }
