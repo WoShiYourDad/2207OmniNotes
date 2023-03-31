@@ -38,9 +38,9 @@ class Security private constructor(){
         private const val AUTH_TAG_SIZE = 16 // AES-GCM authentication tag size is 16 bytes
 
         @JvmStatic
-        fun md5(s: String): String {
+        fun sha256(s: String): String {
             return try {
-                val digest = MessageDigest.getInstance("MD5")
+                val digest = MessageDigest.getInstance("SHA-256")
                 digest.update(s.toByteArray())
                 val messageDigest = digest.digest()
 
@@ -51,7 +51,7 @@ class Security private constructor(){
                 }
                 hexString.toString()
             } catch (e: NoSuchAlgorithmException) {
-                LogDelegate.w("Something is gone wrong calculating MD5", e)
+                LogDelegate.w("Something is gone wrong calculating SHA-256", e)
                 ""
             }
         }

@@ -171,9 +171,9 @@ public class PasswordActivity extends BaseActivity {
           .subscribeOn(Schedulers.newThread())
           .observeOn(AndroidSchedulers.mainThread())
           .doOnSubscribe(() -> Prefs.edit()
-              .putString(PREF_PASSWORD, Security.md5(passwordText))
+              .putString(PREF_PASSWORD, Security.sha256(passwordText))
               .putString(PREF_PASSWORD_QUESTION, questionText)
-              .putString(PREF_PASSWORD_ANSWER, Security.md5(answerText))
+              .putString(PREF_PASSWORD_ANSWER, Security.sha256(answerText))
               .apply())
           .doOnNext(note -> DbHelper.getInstance().updateNote(note, false))
           .doOnCompleted(() -> {

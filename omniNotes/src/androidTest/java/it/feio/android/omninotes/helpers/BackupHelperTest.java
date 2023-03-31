@@ -148,7 +148,7 @@ public class BackupHelperTest extends BaseAndroidTestCase {
   public void importNote_lockedAndPasswordIsSet() throws IOException {
     var password = "uglypassword";
     var content = "test content";
-    Prefs.putString(PREF_PASSWORD, Security.md5(password));
+    Prefs.putString(PREF_PASSWORD, Security.sha256(password));
     var note = createTestNote("test title",
         Security.encrypt(content, Prefs.getString(PREF_PASSWORD, "")), 0);
     note.setLocked(true);

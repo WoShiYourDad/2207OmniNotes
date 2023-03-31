@@ -60,7 +60,7 @@ public class PasswordHelper {
         .onPositive((dialog12, which) -> {
           String storedPassword = Prefs.getString(PREF_PASSWORD, "");
           String password = passwordEditText.getText().toString();
-          boolean result = Security.md5(password).equals(storedPassword);
+          boolean result = Security.sha256(password).equals(storedPassword);
 
           // In case password is ok dialog is dismissed and result sent to callback
           if (result) {
@@ -116,7 +116,7 @@ public class PasswordHelper {
           String oldAnswer = Prefs.getString(PREF_PASSWORD_ANSWER, "");
           String answer1 = answerEditText.getText().toString();
           // The check is done on password's hash stored in preferences
-          boolean result = Security.md5(answer1).equals(oldAnswer);
+          boolean result = Security.sha256(answer1).equals(oldAnswer);
           if (result) {
             dialogElement.dismiss();
             removePassword();
