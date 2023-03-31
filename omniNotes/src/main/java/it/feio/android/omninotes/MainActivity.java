@@ -144,6 +144,7 @@ public class MainActivity extends BaseActivity implements
       public void onAuthenticationFailed() {
         super.onAuthenticationFailed();
         Toast.makeText(getApplicationContext(), "Authentication failed",Toast.LENGTH_SHORT).show();
+        finishAndRemoveTask();
       }
     });
 
