@@ -22,12 +22,21 @@ import it.feio.android.omninotes.helpers.LogDelegate
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.security.SecureRandom
 import javax.crypto.*
-import javax.crypto.spec.DESKeySpec
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 
 class Security private constructor(){
 
     companion object {
+        private const val KEY_SIZE = 128
+        private const val ITERATIONS = 10000
+        private const val SALT_SIZE = KEY_SIZE / 8
+        private const val IV_SIZE = 12 // AES-GCM IV size is 12 bytes
+        private const val AUTH_TAG_SIZE = 16 // AES-GCM authentication tag size is 16 bytes
+
         @JvmStatic
         fun md5(s: String): String {
             return try {
@@ -50,14 +59,29 @@ class Security private constructor(){
         @JvmStatic
         fun encrypt(value: String, password: String): String? {
             return try {
-                val keySpec = DESKeySpec(password.toByteArray(StandardCharsets.UTF_8))
-                val keyFactory = SecretKeyFactory.getInstance("DES")
-                val key = keyFactory.generateSecret(keySpec)
-                val clearText = value.toByteArray(StandardCharsets.UTF_8)
-                // Cipher is not thread safe
-                val cipher = Cipher.getInstance("DES")
-                cipher.init(Cipher.ENCRYPT_MODE, key)
-                Base64.encodeToString(cipher.doFinal(clearText), Base64.DEFAULT)
+                val salt = ByteArray(SALT_SIZE)
+                val random = SecureRandom()
+                random.nextBytes(salt)
+
+                val keySpec = PBEKeySpec(password.toCharArray(), salt, ITERATIONS, KEY_SIZE)
+                val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                val keyBytes = secretKeyFactory.generateSecret(keySpec).encoded
+                val key = SecretKeySpec(keyBytes, "AES")
+
+                val iv = ByteArray(IV_SIZE)
+                random.nextBytes(iv)
+                val ivSpec = GCMParameterSpec(AUTH_TAG_SIZE * 8, iv)
+
+                val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec)
+                val encrypted = cipher.doFinal(value.toByteArray(StandardCharsets.UTF_8))
+
+                val output = ByteArray(SALT_SIZE + IV_SIZE + encrypted.size)
+                System.arraycopy(salt, 0, output, 0, SALT_SIZE)
+                System.arraycopy(iv, 0, output, SALT_SIZE, IV_SIZE)
+                System.arraycopy(encrypted, 0, output, SALT_SIZE + IV_SIZE, encrypted.size)
+
+                Base64.encodeToString(output, Base64.DEFAULT)
             } catch (e: Exception) {
                 LogDelegate.e("Something is gone wrong encrypting", e)
                 value
@@ -65,20 +89,33 @@ class Security private constructor(){
         }
 
         @JvmStatic
-        fun decrypt(value: String?, password: String): String? {
+        fun decrypt(encryptedValue: String, password: String): String? {
             return try {
-                val keySpec = DESKeySpec(password.toByteArray(StandardCharsets.UTF_8))
-                val keyFactory = SecretKeyFactory.getInstance("DES")
-                val key = keyFactory.generateSecret(keySpec)
-                val encryptedPwdBytes = Base64.decode(value, Base64.DEFAULT)
-                // cipher is not thread safe
-                val cipher = Cipher.getInstance("DES")
-                cipher.init(Cipher.DECRYPT_MODE, key)
-                val decrypedValueBytes = cipher.doFinal(encryptedPwdBytes)
-                String(decrypedValueBytes)
+                val decoded = Base64.decode(encryptedValue, Base64.DEFAULT)
+
+                val salt = ByteArray(SALT_SIZE)
+                System.arraycopy(decoded, 0, salt, 0, SALT_SIZE)
+
+                val iv = ByteArray(IV_SIZE)
+                System.arraycopy(decoded, SALT_SIZE, iv, 0, IV_SIZE)
+                val ivSpec = GCMParameterSpec(AUTH_TAG_SIZE * 8, iv)
+
+                val cipherText = ByteArray(decoded.size - SALT_SIZE - IV_SIZE)
+                System.arraycopy(decoded, SALT_SIZE + IV_SIZE, cipherText, 0, cipherText.size)
+
+                val keySpec = PBEKeySpec(password.toCharArray(), salt, ITERATIONS, KEY_SIZE)
+                val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                val keyBytes = secretKeyFactory.generateSecret(keySpec).encoded
+                val key = SecretKeySpec(keyBytes, "AES")
+
+                val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                cipher.init(Cipher.DECRYPT_MODE, key, ivSpec)
+                val decrypted = cipher.doFinal(cipherText)
+
+                String(decrypted, StandardCharsets.UTF_8)
             } catch (e: Exception) {
-                LogDelegate.e("Error decrypting", e)
-                value
+                LogDelegate.e("Something is gone wrong decrypting", e)
+                null
             }
         }
 
