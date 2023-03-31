@@ -131,7 +131,11 @@ public class MainActivity extends BaseActivity implements
       @Override
       public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
         super.onAuthenticationError(errorCode, errString);
-        Toast.makeText(getApplicationContext(),"Authentication error: " + errString, Toast.LENGTH_SHORT).show();
+        //Toast.makeText(getApplicationContext(),"Authentication error: " + errString + " with error code: " + errorCode, Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(),"Error code: " + errorCode, Toast.LENGTH_SHORT).show();
+        if (errorCode != 11) {
+          finishAndRemoveTask();
+        }
       }
 
       @Override
